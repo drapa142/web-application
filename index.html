@@ -9,7 +9,7 @@
 
     <link rel="stylesheet" href="style.css">
 
-    <!-- p5.js（確実に読み込まれる安定版を指定） -->
+    <!-- p5.js -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
 </head>
 
@@ -18,7 +18,7 @@
     <!-- ヘッダー -->
     <header>
         <a href="#top" class="logo">
-            Taichi Yanase
+            Top
         </a>
 
         <nav>
@@ -32,7 +32,7 @@
         <!-- タイトル -->
         <section id="top">
             <p class="eyebrow">
-                INTERACTIVE ART / 2026
+                2026
             </p>
 
             <h1>
@@ -40,7 +40,7 @@
             </h1>
 
             <p class="subtitle">
-                An interactive experiment with lines and motion.
+                kaitasenwougokasemasu
             </p>
         </section>
 
@@ -48,20 +48,26 @@
         <section id="artwork">
             <div id="p5"></div>
 
+            <!-- 画面内操作ボタン -->
+            <div class="artwork-actions">
+                <button id="btn-trail" type="button" class="action-btn active">Trail: ON</button>
+                <button id="btn-reset" type="button" class="action-btn">Reset</button>
+            </div>
+
             <p class="artwork-caption">
-                Move, draw and interact.
+                
             </p>
         </section>
 
-        <!-- 操作説明（最新機能に対応） -->
+        <!-- 操作説明 -->
         <section id="controls">
             <h2>Controls</h2>
 
             <div class="controls-grid">
                 <div>
                     <span>01</span>
-                    <h3>Draw</h3>
-                    <p>左ドラッグで線を描く（Shiftを押しながらで複数線をグループ化）</p>
+                    <h3>Draw &amp; Group</h3>
+                    <p>左ドラッグで線を描く。Shiftを押しながら描くと複数線をグループ化（選択中に描くとその線に統合）</p>
                 </div>
 
                 <div>
@@ -72,8 +78,8 @@
 
                 <div>
                     <span>03</span>
-                    <h3>Move</h3>
-                    <p>右ドラッグで投げる、または十字キーで上下左右に動かす</p>
+                    <h3>Move &amp; Speed</h3>
+                    <p>右ドラッグで投げる、または十字キーで移動。+ / - キーで速度を上げる・下げる</p>
                 </div>
 
                 <div>
@@ -84,8 +90,14 @@
 
                 <div>
                     <span>05</span>
-                    <h3>Delete</h3>
-                    <p>Backspace / Delete キーで選択中の線を消去する</p>
+                    <h3>Delete &amp; Reset</h3>
+                    <p>Backspace で選択中の線を消去、R キーで全消去（リセット）</p>
+                </div>
+
+                <div>
+                    <span>06</span>
+                    <h3>Trail</h3>
+                    <p>T キー、または画面下のボタンで残像の ON / OFF を切り替え</p>
                 </div>
             </div>
         </section>

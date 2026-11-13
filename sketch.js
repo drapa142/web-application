@@ -4,9 +4,10 @@
 // =====================================
 
 // -------------------------------------
-// 残像の長さ
+// 残像の設定
 // -------------------------------------
 const TRAIL_LENGTH = 20;
+let isTrailEnabled = true; // 残像のON/OFF状態
 
 
 // =====================================
@@ -47,10 +48,13 @@ const SCALE_NEAR = 1.0;
 
 
 // -------------------------------------
-// 十字キーで動かすときの速度
+// 十字キー・速度調整の設定
 // -------------------------------------
 
 const ARROW_KEY_SPEED = 0.015;
+const SPEED_STEP_UP = 1.25;    // +キーで速度を何倍にするか
+const SPEED_STEP_DOWN = 0.8;   // -キーで速度を何倍にするか
+const MAX_SPEED_LIMIT = 0.15;  // 速度の上限
 
 
 // -------------------------------------
@@ -91,6 +95,7 @@ let currentStrokes = [];
 
 let selectedDrawing = null;
 let isDragging = false;
+let isRightDragging = false; // キャンバス外での右クリックメニュー防止用フラグ
 
 let throwStartX = 0;
 let throwStartY = 0;
@@ -102,26 +107,115 @@ let throwStartY = 0;
 
 function setup() {
   let canvas = createCanvas(800, 600);
-
-  // ★HTMLの <div id="p5"> の中にキャンバスを配置する
   canvas.parent("p5");
 
   colorMode(HSB, 360, 100, 100, 255);
 
-  canvas.elt.addEventListener(
-    "contextmenu",
-    e => e.preventDefault()
-  );
+  // キャンバス上の右クリックメニューを無効化
+  canvas.elt.addEventListener("contextmenu", e => e.preventDefault());
+
+  // キャンバス外で右クリックを離したときもメニューが出ないようにする
+  window.addEventListener("contextmenu", e => {
+    if (isRightDragging) {
+      e.preventDefault();
+      isRightDragging = false;
+    }
+  });
+
+  // キャンバス外でマウスボタンを離した場合のリリース処理も受け取る
+  window.addEventListener("mouseup", e => {
+    if (e.button === 2 && isRightDragging) {
+      handleRightRelease(e.clientX, e.clientY, canvas.elt);
+      // contextmenuイベントが発火し終えるまでわずかに待ってからフラグを解除する
+      setTimeout(() => {
+        isRightDragging = false;
+      }, 50);
+    }
+  });
+
+  // HTMLボタンとの連携
+  const btnTrail = document.getElementById("btn-trail");
+  if (btnTrail) {
+    btnTrail.addEventListener("click", () => {
+      toggleTrail();
+      btnTrail.blur(); // ボタンを押した後にスペースキー等で誤作動しないようフォーカスを外す
+    });
+  }
+
+  const btnReset = document.getElementById("btn-reset");
+  if (btnReset) {
+    btnReset.addEventListener("click", () => {
+      resetCanvas();
+      btnReset.blur();
+    });
+  }
 }
 
 
 // =====================================
-// 描画データを確定して追加する関数
+// 残像の ON / OFF 切り替え関数
 // =====================================
 
-function finalizeDrawing(strokesArray) {
+function toggleTrail() {
+  isTrailEnabled = !isTrailEnabled;
+
+  // OFFにした瞬間、溜まっている古い残像履歴を消す
+  if (!isTrailEnabled) {
+    for (let drawing of drawings) {
+      drawing.history = [];
+    }
+  }
+
+  // HTMLボタンの表示を更新
+  const btnTrail = document.getElementById("btn-trail");
+  if (btnTrail) {
+    btnTrail.textContent = isTrailEnabled ? "Trail: ON" : "Trail: OFF";
+    btnTrail.classList.toggle("active", isTrailEnabled);
+  }
+}
+
+
+// =====================================
+// リセット関数
+// =====================================
+
+function resetCanvas() {
+  drawings = [];
+  currentDrawing = [];
+  currentStrokes = [];
+  selectedDrawing = null;
+}
+
+
+// =====================================
+// 描画データを確定して追加（または選択中の線に統合）する関数
+// =====================================
+
+function finalizeDrawing(strokesArray, mergeToSelected = false) {
   if (strokesArray.length === 0) return;
 
+  // 選択中の線があり、Shift統合モードの場合はそのグループに統合する
+  if (mergeToSelected && selectedDrawing !== null) {
+    let sphereX = width / 2;
+    let sphereY = height / 2;
+
+    let orbitX = sphereX + cos(selectedDrawing.angle) * cos(selectedDrawing.verticalAngle) * SPHERE_RADIUS;
+    let orbitY = sphereY + sin(selectedDrawing.verticalAngle) * SPHERE_RADIUS;
+    let z = sin(selectedDrawing.angle) * cos(selectedDrawing.verticalAngle);
+    let scaleValue = map(z, -1, 1, SCALE_FAR, SCALE_NEAR);
+
+    // 選択中の線の現在の回転位置・拡大率に合わせて座標を逆算し、見た目の位置がズレないように統合する
+    for (let s of strokesArray) {
+      let convertedStroke = s.map(p => ({
+        x: (p.x - orbitX) / scaleValue + 400,
+        y: (p.y - orbitY) / scaleValue + 300
+      }));
+      selectedDrawing.strokes.push(convertedStroke);
+    }
+    return;
+  }
+
+  // 新しい線（グループ）として作成
   let newDrawing = {
     strokes: strokesArray,
     angle: HALF_PI,
@@ -184,7 +278,9 @@ function draw() {
       brightness: lineBrightness
     });
 
-    if (drawing.history.length > TRAIL_LENGTH) {
+    // 残像ONなら指定フレーム分、OFFなら最新の1フレーム分だけ保持する
+    let maxHistory = isTrailEnabled ? TRAIL_LENGTH : 1;
+    while (drawing.history.length > maxHistory) {
       drawing.history.shift();
     }
 
@@ -278,6 +374,9 @@ function draw() {
 // =====================================
 
 function mousePressed(event) {
+  // キャンバス外でのクリックは無視する
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return;
+
   if (event.button === 0) {
     isDragging = false;
     currentDrawing = [];
@@ -287,6 +386,7 @@ function mousePressed(event) {
   }
 
   if (event.button === 2) {
+    isRightDragging = true;
     throwStartX = mouseX;
     throwStartY = mouseY;
   }
@@ -308,6 +408,31 @@ function mouseDragged(event) {
 
 
 // =====================================
+// 右ドラッグを離したときの共通処理（キャンバス内外対応）
+// =====================================
+
+function handleRightRelease(clientX, clientY, canvasElt) {
+  if (!selectedDrawing) return;
+
+  // 画面上のマウス座標をキャンバス内の座標に変換
+  let rect = canvasElt.getBoundingClientRect();
+  let scaleX = width / rect.width;
+  let scaleY = height / rect.height;
+  let releaseX = (clientX - rect.left) * scaleX;
+  let releaseY = (clientY - rect.top) * scaleY;
+
+  let dx = releaseX - throwStartX;
+  let dy = releaseY - throwStartY;
+
+  let speedX = constrain(dx * THROW_POWER, -MAX_THROW_SPEED, MAX_THROW_SPEED);
+  let speedY = constrain(-dy * THROW_POWER, -MAX_THROW_SPEED, MAX_THROW_SPEED);
+
+  selectedDrawing.orbitSpeed = speedX;
+  selectedDrawing.verticalSpeed = speedY;
+}
+
+
+// =====================================
 // マウスを離したとき
 // =====================================
 
@@ -319,20 +444,9 @@ function mouseReleased(event) {
     currentDrawing = [];
 
     if (!keyIsDown(SHIFT)) {
-      finalizeDrawing(currentStrokes);
+      finalizeDrawing(currentStrokes, false);
       currentStrokes = [];
     }
-  }
-
-  if (event.button === 2 && selectedDrawing) {
-    let dx = mouseX - throwStartX;
-    let dy = mouseY - throwStartY;
-
-    let speedX = constrain(dx * THROW_POWER, -MAX_THROW_SPEED, MAX_THROW_SPEED);
-    let speedY = constrain(-dy * THROW_POWER, -MAX_THROW_SPEED, MAX_THROW_SPEED);
-
-    selectedDrawing.orbitSpeed = speedX;
-    selectedDrawing.verticalSpeed = speedY;
   }
 }
 
@@ -342,6 +456,7 @@ function mouseReleased(event) {
 // =====================================
 
 function mouseClicked(event) {
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return;
   if (event.button !== 0) return;
   if (keyIsDown(SHIFT)) return;
 
@@ -381,19 +496,43 @@ function mouseClicked(event) {
 // =====================================
 
 function keyPressed(event) {
+  // T キー：残像の ON / OFF
+  if (event.key.toLowerCase() === "t" && !event.ctrlKey && !event.metaKey) {
+    toggleTrail();
+    return false;
+  }
+
+  // R キー：リセット（全消去）
+  if (event.key.toLowerCase() === "r" && !event.ctrlKey && !event.metaKey) {
+    resetCanvas();
+    return false;
+  }
+
+  // Backspace / Delete：選択中の線を消去し、一つ前の線を選択する
   if (event.key === "Backspace" || event.key === "Delete") {
     event.preventDefault();
     if (selectedDrawing !== null) {
       let index = drawings.indexOf(selectedDrawing);
       if (index !== -1) {
         drawings.splice(index, 1);
+
+        if (drawings.length > 0) {
+          // 消した線の1つ前（0番目を消した場合は最後の線）を選択
+          let prevIndex = (index - 1 + drawings.length) % drawings.length;
+          selectedDrawing = drawings[prevIndex];
+        } else {
+          selectedDrawing = null;
+        }
+      } else {
+        selectedDrawing = null;
       }
-      selectedDrawing = null;
     }
     return false;
   }
 
+  // 選択中の線に対する操作（十字キー・速度調整）
   if (selectedDrawing !== null) {
+    // 十字キー：上下左右に移動
     if (event.key === "ArrowUp") {
       event.preventDefault();
       selectedDrawing.orbitSpeed = 0;
@@ -418,8 +557,38 @@ function keyPressed(event) {
       selectedDrawing.verticalSpeed = 0;
       return false;
     }
+
+    // + / = キー：速度を上げる
+    if (event.key === "+" || event.key === "=" || event.key === ";") {
+      event.preventDefault();
+      // 静止している場合はデフォルト速度で右方向へ動かし始める
+      if (selectedDrawing.orbitSpeed === 0 && selectedDrawing.verticalSpeed === 0) {
+        selectedDrawing.orbitSpeed = -ARROW_KEY_SPEED;
+      } else {
+        selectedDrawing.orbitSpeed = constrain(
+          selectedDrawing.orbitSpeed * SPEED_STEP_UP,
+          -MAX_SPEED_LIMIT,
+          MAX_SPEED_LIMIT
+        );
+        selectedDrawing.verticalSpeed = constrain(
+          selectedDrawing.verticalSpeed * SPEED_STEP_UP,
+          -MAX_SPEED_LIMIT,
+          MAX_SPEED_LIMIT
+        );
+      }
+      return false;
+    }
+
+    // - キー：速度を下げる
+    if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      selectedDrawing.orbitSpeed *= SPEED_STEP_DOWN;
+      selectedDrawing.verticalSpeed *= SPEED_STEP_DOWN;
+      return false;
+    }
   }
 
+  // ] キー：次の線を選択
   if (event.key === "]") {
     event.preventDefault();
     if (drawings.length === 0) return false;
@@ -428,6 +597,7 @@ function keyPressed(event) {
     return false;
   }
 
+  // [ キー：前の線を選択
   if (event.key === "[") {
     event.preventDefault();
     if (drawings.length === 0) return false;
@@ -436,6 +606,7 @@ function keyPressed(event) {
     return false;
   }
 
+  // Ctrl + C：線をコピー
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c") {
     if (selectedDrawing !== null) {
       copiedDrawing = {
@@ -451,6 +622,7 @@ function keyPressed(event) {
     return false;
   }
 
+  // Ctrl + V：線を貼り付け
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") {
     if (copiedDrawing !== null) {
       let newDrawing = {
@@ -478,7 +650,9 @@ function keyPressed(event) {
 function keyReleased(event) {
   if (event.key === "Shift") {
     if (currentStrokes.length > 0) {
-      finalizeDrawing(currentStrokes);
+      // すでに選択中の線があればそこに統合(true)、なければ新規作成(false)
+      let shouldMerge = (selectedDrawing !== null);
+      finalizeDrawing(currentStrokes, shouldMerge);
       currentStrokes = [];
     }
   }

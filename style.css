@@ -137,11 +137,41 @@ h1 {
     -webkit-user-select: none;
 }
 
+/* キャンバス下の操作ボタン */
+.artwork-actions {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 22px;
+}
+
+.action-btn {
+    background: transparent;
+    color: #aaaaaa;
+    border: 1px solid #444444;
+    padding: 8px 20px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.25s;
+}
+
+.action-btn:hover {
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+.action-btn.active {
+    border-color: #ffffff;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
 .artwork-caption {
     color: #777777;
     font-size: 12px;
     letter-spacing: 1px;
-    margin-top: 20px;
+    margin-top: 16px;
 }
 
 
