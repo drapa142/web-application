@@ -7,7 +7,7 @@
 // 残像の設定
 // -------------------------------------
 const TRAIL_LENGTH = 20;
-let isTrailEnabled = true; // 残像のON/OFF状態
+let isTrailEnabled = false; // 残像のON/OFF状態
 
 
 // =====================================
@@ -32,8 +32,8 @@ const SELECT_MARKER_WEIGHT = 1.5;
 // 線の太さ
 // -------------------------------------
 
-const DRAWING_STROKE = 3;
-const SELECTED_STROKE = 4;
+const DRAWING_STROKE = 10;
+const SELECTED_STROKE = 10;
 
 
 // -------------------------------------
