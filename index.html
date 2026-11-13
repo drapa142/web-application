@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Untitled - Interactive Art</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- p5.js（確実に読み込まれる安定版を指定） -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.3/lib/p5.min.js"></script>
+</head>
+
+<body>
+
+    <!-- ヘッダー -->
+    <header>
+        <a href="#top" class="logo">
+            Taichi Yanase
+        </a>
+
+        <nav>
+            <a href="#artwork">Artwork</a>
+            <a href="#controls">Controls</a>
+            <a href="#about">About</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- タイトル -->
+        <section id="top">
+            <p class="eyebrow">
+                INTERACTIVE ART / 2026
+            </p>
+
+            <h1>
+                Untitled
+            </h1>
+
+            <p class="subtitle">
+                An interactive experiment with lines and motion.
+            </p>
+        </section>
+
+        <!-- 作品 -->
+        <section id="artwork">
+            <div id="p5"></div>
+
+            <p class="artwork-caption">
+                Move, draw and interact.
+            </p>
+        </section>
+
+        <!-- 操作説明（最新機能に対応） -->
+        <section id="controls">
+            <h2>Controls</h2>
+
+            <div class="controls-grid">
+                <div>
+                    <span>01</span>
+                    <h3>Draw</h3>
+                    <p>左ドラッグで線を描く（Shiftを押しながらで複数線をグループ化）</p>
+                </div>
+
+                <div>
+                    <span>02</span>
+                    <h3>Select</h3>
+                    <p>線をクリックして選択する（[ と ] キーで切り替え）</p>
+                </div>
+
+                <div>
+                    <span>03</span>
+                    <h3>Move</h3>
+                    <p>右ドラッグで投げる、または十字キーで上下左右に動かす</p>
+                </div>
+
+                <div>
+                    <span>04</span>
+                    <h3>Copy &amp; Paste</h3>
+                    <p>Ctrl + C でコピー、Ctrl + V で貼り付け</p>
+                </div>
+
+                <div>
+                    <span>05</span>
+                    <h3>Delete</h3>
+                    <p>Backspace / Delete キーで選択中の線を消去する</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 作品について -->
+        <section id="about">
+            <h2>About</h2>
+
+            <p>
+                This is an interactive artwork created with JavaScript and p5.js.
+                Draw lines and watch them move around a spherical space.
+            </p>
+        </section>
+    </main>
+
+    <footer>
+        <span>© 2026 Taichi Yanase</span>
+        <span>Interactive Art</span>
+    </footer>
+
+    <!-- 作品のJavaScript -->
+    <script src="sketch.js"></script>
+
+</body>
+</html>
